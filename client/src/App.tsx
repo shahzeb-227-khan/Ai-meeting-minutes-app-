@@ -5,14 +5,25 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
+import { AppLayout } from "@/components/layout/AppLayout";
+import Dashboard from "@/pages/Dashboard";
+import Meetings from "@/pages/Meetings";
+import MeetingDetails from "@/pages/MeetingDetails";
+import ActionTracker from "@/pages/ActionTracker";
+import Team from "@/pages/Team";
+
 function Router() {
   return (
-    <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <AppLayout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/meetings" component={Meetings} />
+        <Route path="/meetings/:id" component={MeetingDetails} />
+        <Route path="/actions" component={ActionTracker} />
+        <Route path="/team" component={Team} />
+        <Route component={NotFound} />
+      </Switch>
+    </AppLayout>
   );
 }
 
