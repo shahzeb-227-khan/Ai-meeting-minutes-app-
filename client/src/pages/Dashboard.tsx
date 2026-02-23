@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { 
-  TrendingUp, CheckCircle2, AlertCircle, Clock, Video, Plus, ArrowRight 
+  TrendingUp, CheckCircle2, AlertCircle, Clock, Video, Plus, ArrowRight, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

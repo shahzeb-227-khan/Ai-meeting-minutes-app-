@@ -3,12 +3,8 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+import { analyzeMeeting } from "./services/ai.service";
+import { log } from "./index";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -107,6 +103,16 @@ export async function registerRoutes(
   });
 
   // Meetings
+  app.get(api.meetings.intelligence.path, async (req, res) => {
+    try {
+      const intelligence = await storage.getMeetingIntelligence();
+      res.json(intelligence);
+    } catch (error) {
+      console.error("Error fetching meeting intelligence:", error);
+      res.status(500).json({ message: "Failed to fetch meeting intelligence" });
+    }
+  });
+
   app.get(api.meetings.list.path, async (req, res) => {
     try {
       const meetingsList = await storage.getMeetings();
@@ -120,6 +126,11 @@ export async function registerRoutes(
   app.get(api.meetings.get.path, async (req, res) => {
     try {
       const id = Number(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid meeting ID" });
+      }
+
       const meeting = await storage.getMeeting(id);
       if (!meeting) {
         return res.status(404).json({ message: "Meeting not found" });
@@ -155,6 +166,11 @@ export async function registerRoutes(
   app.post(api.meetings.analyze.path, async (req, res) => {
     try {
       const id = Number(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid meeting ID" });
+      }
+
       const meeting = await storage.getMeeting(id);
       if (!meeting) {
         return res.status(404).json({ message: "Meeting not found" });
@@ -162,53 +178,14 @@ export async function registerRoutes(
 
       const teamMembersList = await storage.getTeamMembers();
 
-      const analysisPrompt = `Analyze the following meeting notes and extract structured information:
+      log(`Starting AI analysis for meeting ${id}`, "api");
 
-Meeting Title: ${meeting.title}
-Meeting Date: ${meeting.date}
-Raw Notes:
-${meeting.rawNotes}
-
-Available team members: ${teamMembersList.map((m) => `${m.name} (ID: ${m.id})`).join(", ")}
-
-Please provide a JSON response with the following structure:
-{
-  "summary": "A concise 2-3 sentence summary of the meeting",
-  "clarityScore": 8.5,
-  "decisions": ["Decision 1", "Decision 2"],
-  "discussionPoints": ["Discussion topic 1", "Discussion topic 2"],
-  "risks": ["Risk 1", "Risk 2"],
-  "sentiment": "positive/neutral/negative",
-  "actionItems": [
-    {
-      "title": "Action item title",
-      "description": "Description",
-      "assigneeId": 1,
-      "priority": "high/medium/low/urgent",
-      "dueDate": "2026-03-15T10:00:00.000Z"
-    }
-  ]
-}
-
-The clarityScore should be 0-10 based on how clear and actionable the meeting was.
-Extract all action items with realistic assignees from the available team members.
-All date strings should be in ISO format.`;
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-5.2",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert meeting analyst. Extract structured information and action items from meeting notes.",
-          },
-          { role: "user", content: analysisPrompt },
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 8192,
-      });
-
-      const analysis = JSON.parse(response.choices[0]?.message?.content || "{}");
+      const analysis = await analyzeMeeting(
+        meeting.title,
+        new Date(meeting.date),
+        meeting.rawNotes,
+        teamMembersList.map((m) => ({ id: m.id, name: m.name }))
+      );
 
       await storage.updateMeeting(id, {
         summary: analysis.summary,
@@ -219,14 +196,14 @@ All date strings should be in ISO format.`;
         sentiment: analysis.sentiment,
       });
 
-      if (analysis.actionItems && Array.isArray(analysis.actionItems)) {
+      if (analysis.actionItems && analysis.actionItems.length > 0) {
         for (const item of analysis.actionItems) {
           await storage.createActionItem({
             meetingId: id,
             title: item.title,
             description: item.description || null,
             assigneeId: item.assigneeId || null,
-            priority: item.priority || "medium",
+            priority: item.priority,
             status: "todo",
             dueDate: item.dueDate ? new Date(item.dueDate) : null,
           });
@@ -234,20 +211,11 @@ All date strings should be in ISO format.`;
       }
 
       const updatedMeeting = await storage.getMeeting(id);
+      log(`Meeting ${id} analyzed successfully`, "api");
       res.json(updatedMeeting);
-    } catch (error) {
-      console.error("Error analyzing meeting:", error);
+    } catch (error: any) {
+      log(`Error analyzing meeting: ${error.message}`, "api");
       res.status(500).json({ message: "Failed to analyze meeting" });
-    }
-  });
-
-  app.get(api.meetings.intelligence.path, async (req, res) => {
-    try {
-      const intelligence = await storage.getMeetingIntelligence();
-      res.json(intelligence);
-    } catch (error) {
-      console.error("Error fetching meeting intelligence:", error);
-      res.status(500).json({ message: "Failed to fetch meeting intelligence" });
     }
   });
 

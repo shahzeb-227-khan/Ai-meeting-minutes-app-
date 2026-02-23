@@ -165,62 +165,83 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMeetingIntelligence(): Promise<MeetingIntelligence> {
-    const allMeetings = await db.select().from(meetings);
+    try {
+      const allMeetings = await db.select().from(meetings);
 
-    let totalDecisions = 0;
-    let totalDiscussions = 0;
-    const allRisks: string[] = [];
-    const sentiments: string[] = [];
-
-    allMeetings.forEach((meeting) => {
-      totalDecisions += meeting.decisions?.length || 0;
-      totalDiscussions += meeting.discussionPoints?.length || 0;
-      if (meeting.risks) {
-        allRisks.push(...meeting.risks);
+      if (allMeetings.length === 0) {
+        return {
+          decisionVsDiscussionRatio: 0,
+          topRisks: [],
+          recurringIssues: [],
+          sentimentTrend: "neutral",
+        };
       }
-      if (meeting.sentiment) {
-        sentiments.push(meeting.sentiment);
+
+      let totalDecisions = 0;
+      let totalDiscussions = 0;
+      const allRisks: string[] = [];
+      const sentiments: string[] = [];
+
+      allMeetings.forEach((meeting) => {
+        if (meeting.decisions && Array.isArray(meeting.decisions)) {
+          totalDecisions += meeting.decisions.length;
+        }
+        if (meeting.discussionPoints && Array.isArray(meeting.discussionPoints)) {
+          totalDiscussions += meeting.discussionPoints.length;
+        }
+        if (meeting.risks && Array.isArray(meeting.risks)) {
+          allRisks.push(...meeting.risks.filter((r) => typeof r === "string" && r.length > 0));
+        }
+        if (meeting.sentiment && typeof meeting.sentiment === "string") {
+          sentiments.push(meeting.sentiment);
+        }
+      });
+
+      const riskCounts = allRisks.reduce((acc, risk) => {
+        acc[risk] = (acc[risk] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const topRisks = Object.entries(riskCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([risk]) => risk);
+
+      const recurringIssues = Object.entries(riskCounts)
+        .filter(([, count]) => count >= 2)
+        .map(([risk]) => risk);
+
+      const positiveSentiments = sentiments.filter((s) =>
+        ["positive", "optimistic", "enthusiastic"].includes(s.toLowerCase())
+      ).length;
+      const negativeSentiments = sentiments.filter((s) =>
+        ["negative", "concerned", "frustrated"].includes(s.toLowerCase())
+      ).length;
+
+      let sentimentTrend = "neutral";
+      if (positiveSentiments > negativeSentiments) {
+        sentimentTrend = "positive";
+      } else if (negativeSentiments > positiveSentiments) {
+        sentimentTrend = "negative";
       }
-    });
 
-    // Calculate risk frequency
-    const riskCounts = allRisks.reduce((acc, risk) => {
-      acc[risk] = (acc[risk] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+      const ratio = totalDiscussions > 0 ? totalDecisions / totalDiscussions : 0;
 
-    const topRisks = Object.entries(riskCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([risk]) => risk);
-
-    // Find recurring issues (risks mentioned 2+ times)
-    const recurringIssues = Object.entries(riskCounts)
-      .filter(([, count]) => count >= 2)
-      .map(([risk]) => risk);
-
-    // Determine sentiment trend
-    const positiveSentiments = sentiments.filter((s) =>
-      ["positive", "optimistic", "enthusiastic"].includes(s.toLowerCase())
-    ).length;
-    const negativeSentiments = sentiments.filter((s) =>
-      ["negative", "concerned", "frustrated"].includes(s.toLowerCase())
-    ).length;
-
-    let sentimentTrend = "neutral";
-    if (positiveSentiments > negativeSentiments) {
-      sentimentTrend = "positive";
-    } else if (negativeSentiments > positiveSentiments) {
-      sentimentTrend = "negative";
+      return {
+        decisionVsDiscussionRatio: Number.isFinite(ratio) ? ratio : 0,
+        topRisks,
+        recurringIssues,
+        sentimentTrend,
+      };
+    } catch (error) {
+      console.error("Error in getMeetingIntelligence:", error);
+      return {
+        decisionVsDiscussionRatio: 0,
+        topRisks: [],
+        recurringIssues: [],
+        sentimentTrend: "neutral",
+      };
     }
-
-    return {
-      decisionVsDiscussionRatio:
-        totalDiscussions > 0 ? totalDecisions / totalDiscussions : 0,
-      topRisks,
-      recurringIssues,
-      sentimentTrend,
-    };
   }
 
   // Action Items

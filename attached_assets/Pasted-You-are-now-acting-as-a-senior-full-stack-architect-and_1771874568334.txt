@@ -1,0 +1,157 @@
+You are now acting as a senior full-stack architect and production stability engineer.
+
+The current application has partial functionality but contains hidden errors and inconsistent AI endpoint behavior.
+
+Your task is NOT to add new features.
+
+Your task is to:
+
+Audit the entire project structure.
+
+Identify all broken API routes.
+
+Fix the meeting intelligence analytics endpoint error.
+
+Ensure all AI calls are handled with proper async/await and error handling.
+
+Ensure all environment variables are properly configured and validated.
+
+Add proper try/catch blocks to every backend route.
+
+Add structured logging for debugging.
+
+Ensure database schema matches frontend expectations.
+
+Ensure API responses are consistent in format.
+
+Remove dead code and unused imports.
+
+Phase 1: Stabilize Backend
+
+Review all routes under /api.
+
+Verify that each route returns:
+{
+success: boolean,
+data: object | null,
+error: string | null
+}
+
+Ensure GPT integration:
+
+Has timeout handling.
+
+Has fallback response if AI fails.
+
+Does not crash the server.
+
+Logs errors cleanly.
+
+Fix the meeting intelligence endpoint:
+
+Ensure it queries correct database tables.
+
+Ensure it does not reference undefined fields.
+
+Ensure it aggregates properly.
+
+Validate null values before computation.
+
+Validate schema:
+meetings
+action_items
+team_members
+
+Make sure foreign keys are consistent.
+
+Phase 2: Improve AI Reliability
+
+Refactor AI call to:
+
+Use a single centralized AI service file.
+
+Validate input length before sending to model.
+
+Sanitize user input.
+
+Parse model output safely (JSON parsing must be wrapped in try/catch).
+
+If parsing fails → regenerate once.
+
+If still fails → return structured fallback.
+
+Never allow raw AI output to break frontend.
+
+Phase 3: Frontend Stability
+
+Ensure all API calls:
+
+Have loading states
+
+Have error states
+
+Do not crash if response is null
+
+Add skeleton loaders.
+
+Ensure charts handle empty datasets.
+
+Remove console errors.
+
+Fix any state mismatch bugs.
+
+Phase 4: Production Polish
+
+Add centralized error middleware.
+
+Add request validation.
+
+Ensure no hardcoded values.
+
+Remove duplicate logic.
+
+Ensure proper modular structure:
+/routes
+/controllers
+/services
+/utils
+
+Phase 5: Upgrade to Production-Level
+
+Once stable:
+
+Improve AI prompt engineering.
+
+Improve clarity score calculation logic.
+
+Ensure analytics endpoint calculates:
+
+Completion rate
+
+Overdue %
+
+Average task delay
+
+Risk frequency
+
+All metrics must be computed safely.
+
+Final Output Requirement:
+
+After fixing everything, provide:
+
+Summary of fixes made.
+
+List of endpoints verified.
+
+Confirmation that no runtime errors remain.
+
+Confirmation that AI analysis works reliably.
+
+Confirmation that frontend handles all edge cases.
+
+Suggest next performance improvement step.
+
+Do NOT add unnecessary features.
+Do NOT refactor entire UI.
+Focus on stability, correctness, and clean architecture.
