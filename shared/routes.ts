@@ -121,8 +121,16 @@ export const api = {
       path: "/api/meetings" as const,
       input: insertMeetingSchema,
       responses: {
-        201: z.any(),
-        400: errorSchemas.validation,
+        201: z.object({
+          success: z.boolean(),
+          data: z.any(),
+          error: z.string().nullable(),
+        }),
+        400: z.object({
+          success: z.boolean(),
+          data: z.null(),
+          error: z.string(),
+        }),
       },
     },
     analyze: {

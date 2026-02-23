@@ -14,10 +14,10 @@ export async function registerRoutes(
   app.get(api.dashboard.stats.path, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
-      res.json(stats);
-    } catch (error) {
+      res.json({ success: true, data: stats, error: null });
+    } catch (error: any) {
       console.error("Error fetching dashboard stats:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch dashboard stats" });
     }
   });
 
@@ -25,10 +25,10 @@ export async function registerRoutes(
   app.get(api.teamMembers.list.path, async (req, res) => {
     try {
       const members = await storage.getTeamMembers();
-      res.json(members);
-    } catch (error) {
+      res.json({ success: true, data: members, error: null });
+    } catch (error: any) {
       console.error("Error fetching team members:", error);
-      res.status(500).json({ message: "Failed to fetch team members" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch team members" });
     }
   });
 
@@ -37,12 +37,12 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const member = await storage.getTeamMember(id);
       if (!member) {
-        return res.status(404).json({ message: "Team member not found" });
+        return res.status(404).json({ success: false, data: null, error: "Team member not found" });
       }
-      res.json(member);
-    } catch (error) {
+      res.json({ success: true, data: member, error: null });
+    } catch (error: any) {
       console.error("Error fetching team member:", error);
-      res.status(500).json({ message: "Failed to fetch team member" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch team member" });
     }
   });
 
@@ -148,18 +148,38 @@ export async function registerRoutes(
 
   app.post(api.meetings.create.path, async (req, res) => {
     try {
-      const input = api.meetings.create.input.parse(req.body);
+      log(`Incoming meeting creation request: ${JSON.stringify(req.body)}`, "api");
+      
+      const bodySchema = api.meetings.create.input.extend({
+        date: z.coerce.date(),
+      });
+      
+      const input = bodySchema.parse(req.body);
+      log(`Validated input: ${JSON.stringify(input)}`, "api");
+      
       const meeting = await storage.createMeeting(input);
-      res.status(201).json(meeting);
-    } catch (error) {
+      log(`Meeting created in DB: ${meeting.id}`, "api");
+      
+      res.status(201).json({
+        success: true,
+        data: meeting,
+        error: null
+      });
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
+        log(`Validation error creating meeting: ${JSON.stringify(error.errors)}`, "api");
         return res.status(400).json({
-          message: error.errors[0].message,
-          field: error.errors[0].path.join("."),
+          success: false,
+          data: null,
+          error: error.errors[0].message
         });
       }
       console.error("Error creating meeting:", error);
-      res.status(500).json({ message: "Failed to create meeting" });
+      res.status(500).json({ 
+        success: false, 
+        data: null, 
+        error: error.message || "Failed to create meeting" 
+      });
     }
   });
 

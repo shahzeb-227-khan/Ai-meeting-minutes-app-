@@ -6,8 +6,9 @@ export function useMeetings() {
     queryKey: [api.meetings.list.path],
     queryFn: async () => {
       const res = await fetch(api.meetings.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch meetings");
-      return api.meetings.list.responses[200].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to fetch meetings");
+      return result.data;
     },
   });
 }
@@ -19,8 +20,9 @@ export function useMeeting(id: number) {
       const url = buildUrl(api.meetings.get.path, { id });
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) return null;
-      if (!res.ok) throw new Error("Failed to fetch meeting");
-      return api.meetings.get.responses[200].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to fetch meeting");
+      return result.data;
     },
     enabled: !!id,
   });
@@ -36,8 +38,11 @@ export function useCreateMeeting() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create meeting");
-      return api.meetings.create.responses[201].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) {
+        throw new Error(result.error || "Failed to create meeting");
+      }
+      return result.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.meetings.list.path] });

@@ -1,0 +1,160 @@
+You are now acting as a senior backend stability engineer.
+
+The application shows the error:
+
+"Failed to create meeting"
+
+Your task is to systematically debug and fix the meeting creation flow.
+
+Do NOT redesign the app.
+Do NOT add new features.
+Only diagnose and fix the issue.
+
+Step 1: Trace the Full Request Flow
+
+Identify the frontend function that triggers meeting creation.
+
+Identify the API endpoint being called (likely POST /api/meetings).
+
+Log the exact request payload being sent.
+
+Verify that:
+
+title is not null
+
+date is valid
+
+notes/transcript is not empty
+
+If validation fails, return proper error message instead of generic failure.
+
+Step 2: Inspect Backend Route
+
+Open the POST /api/meetings route.
+
+Verify:
+
+Proper async/await usage
+
+try/catch wrapping entire route
+
+No missing required fields
+
+No undefined variables
+
+No schema mismatch
+
+Ensure it returns:
+
+{
+success: true,
+data: meeting,
+error: null
+}
+
+On failure:
+
+{
+success: false,
+data: null,
+error: "specific reason"
+}
+
+Step 3: Check Database Insert Logic
+
+Verify:
+
+All required columns exist
+
+No NOT NULL constraint violations
+
+Date format matches DB schema
+
+No missing foreign keys
+
+If date format is string and DB expects timestamp, convert properly.
+
+If using ORM:
+
+Ensure correct model fields
+
+Ensure correct column names
+
+If raw SQL:
+
+Validate insert query parameters
+
+Step 4: Add Debug Logging
+
+Temporarily log:
+
+Incoming request body
+
+Validation results
+
+Insert result
+
+Full error stack trace
+
+Do NOT suppress errors silently.
+
+Step 5: Fix Frontend Error Handling
+
+Ensure frontend:
+
+Checks response.success
+
+Displays response.error message
+
+Does not assume data exists
+
+Waits for async request to finish
+
+Add loading state and proper error display.
+
+Step 6: Validate End-to-End
+
+After fixing:
+
+Create meeting with:
+
+Valid title
+
+Valid date
+
+Notes text
+
+Confirm:
+
+Record exists in DB
+
+Response is correct
+
+No console errors
+
+No red error toast
+
+Step 7: Harden for Production
+
+Add request validation middleware
+
+Prevent empty note submission
+
+Ensure consistent date formatting
+
+Add server-side input sanitization
+
+Final Output Required:
+
+Root cause of failure
+
+Exact fix applied
+
+Confirmation meeting creation works
+
+Confirmation no unhandled promise rejections
+
+Confirmation DB insert verified
+
+Do not say “should work.”
+Verify it.
