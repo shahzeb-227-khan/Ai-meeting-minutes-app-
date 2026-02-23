@@ -1,0 +1,310 @@
+Prompt:
+
+You are a senior product designer and frontend architect designing a modern, enterprise-grade SaaS platform called:
+
+“MeetWise AI – Intelligent Meeting Execution System”
+
+Your task is to design a world-class, visually stunning, smooth, and highly usable UI/UX that competes with top-tier SaaS products like Linear, Notion, Asana, and ClickUp.
+
+The application must feel premium, modern, minimal, fast, and intelligent.
+
+🎨 Design Language & Aesthetic
+
+Clean minimal layout
+
+Soft shadows, glassmorphism touches (subtle, not heavy)
+
+Rounded corners (12–16px)
+
+Smooth micro-interactions
+
+Professional color palette
+
+Dark mode + Light mode toggle
+
+Modern typography (Inter / SF Pro style)
+
+Soft gradient highlights
+
+Elegant hover effects
+
+Fluid transitions (200–300ms)
+
+Design must feel:
+
+Trustworthy
+
+Smart
+
+Executive-ready
+
+Data-focused
+
+Not cluttered
+
+🧠 UX Philosophy
+
+Prioritize:
+
+Clarity over complexity
+
+Fast cognitive scanning
+
+One-click task actions
+
+Visible accountability
+
+Zero confusion workflow
+
+Every screen must answer:
+
+What happened?
+
+What needs to happen?
+
+Who owns it?
+
+What is overdue?
+
+🖥 Core Screens to Design
+1️⃣ Dashboard (Main Command Center)
+
+Must include:
+
+Welcome header
+
+AI Meeting Clarity Score (animated gauge)
+
+Total Meetings
+
+Open Action Items
+
+Overdue Tasks
+
+Completion Rate Chart
+
+Risk Alerts Section
+
+“Upload New Meeting” CTA button
+
+Add:
+
+Smooth number counters
+
+Animated progress rings
+
+Hover tooltips explaining metrics
+
+2️⃣ Upload Meeting Page
+
+Large drag-and-drop area with:
+
+Paste notes input
+
+File upload
+
+Clean “Generate Execution Plan” button
+
+AI processing animation (modern loading sequence)
+
+Step-by-step AI processing indicator
+
+When results load:
+
+Split layout:
+
+Left:
+Structured Summary
+
+Right:
+Editable Action Table
+
+3️⃣ Action Tracker View
+
+Multiple display modes:
+
+Table view
+
+Kanban board
+
+Timeline view
+
+Each task card must show:
+
+Owner avatar
+
+Deadline badge
+
+Priority color
+
+Status dropdown
+
+Quick edit icon
+
+Subtask expansion
+
+Drag-and-drop between statuses.
+
+4️⃣ Team Performance View
+
+Analytics dashboard:
+
+Tasks per member
+
+Overdue heatmap
+
+Completion trend graph
+
+Average delay time
+
+Productivity index
+
+Make charts animated and smooth.
+
+5️⃣ Meeting Intelligence View
+
+Show:
+
+Decision vs Discussion ratio
+
+Risk detection summary
+
+Recurring issue detector
+
+Sentiment analysis score
+
+Suggested next meeting agenda
+
+Present in clean data cards.
+
+⚡ Micro-Interactions Required
+
+Button hover elevation
+
+Smooth dropdown transitions
+
+Inline edit animation
+
+Toast notifications
+
+Subtle success check animation
+
+Task completion strike-through animation
+
+Overdue pulse highlight
+
+No abrupt transitions.
+
+Everything must feel premium.
+
+📱 Responsiveness
+
+Fully responsive
+
+Mobile optimized
+
+Collapsible sidebar
+
+Touch-friendly drag and drop
+
+🧩 Sidebar Navigation
+
+Left fixed sidebar:
+
+Dashboard
+
+Meetings
+
+Tasks
+
+Analytics
+
+Team
+
+Settings
+
+Collapsible with smooth animation.
+
+🎯 Advanced UI Features
+
+Global search bar
+
+Command palette (like Cmd+K)
+
+Smart filters
+
+Tag system
+
+AI suggestions popover
+
+Dark mode auto-save
+
+Floating action button for quick meeting upload
+
+🔒 UX Details
+
+Confirmation before deletion
+
+Autosave edits
+
+Empty state illustrations
+
+Friendly onboarding tutorial
+
+Skeleton loading placeholders
+
+Elegant error states
+
+🎨 Visual Tone
+
+Inspired by:
+
+Linear.app
+
+Notion.so
+
+Slack modern UI
+
+Vercel dashboard aesthetic
+
+But do NOT copy directly.
+
+Make it unique.
+
+🏗 Technical Expectations
+
+Component-based architecture
+
+Clean reusable UI components
+
+Proper state management
+
+Modular layout
+
+Fast rendering
+
+Smooth performance
+
+No broken UI.
+No layout shifts.
+No visual clutter.
+
+🏆 Competition Goal
+
+The UI must:
+
+Impress judges within 10 seconds
+
+Feel like a real startup product
+
+Be portfolio-worthy
+
+Look fundable
+
+Look enterprise-ready
+
+Design should be worthy of:
+
+“Most Creative UI”
+“Best SaaS”
+“Technical Excellence”
