@@ -24,7 +24,7 @@ app.use(
     saveUninitialized: false,
     name: "meetwise.sid",
     cookie: {
-      secure: true,       // Vercel always serves over HTTPS
+      secure: true, // Vercel always serves over HTTPS
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: "lax",
@@ -35,22 +35,26 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: false }));
 
-// Error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const status = err.status || err.statusCode || 500;
-  res.status(status).json({ success: false, error: err.message || "Internal server error" });
-});
-
 // Initialize routes once; reuse across invocations (module-level singleton)
 let initialized: Promise<void> | null = null;
 
 function ensureInitialized() {
   if (!initialized) {
     initialized = registerRoutes(httpServer, app)
-      .then(() => {/* ready */})
+      .then(() => {
+        // Attach error handler AFTER routes so Express can use it
+        app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+          const status = err?.status || err?.statusCode || 500;
+          console.error("Unhandled API error:", err);
+          if (res.headersSent) return;
+          res
+            .status(status)
+            .json({ success: false, data: null, error: err?.message || "Internal server error" });
+        });
+      })
       .catch((err) => {
         console.error("Failed to initialize routes:", err);
-        initialized = null; // allow retry
+        initialized = null; // allow retry on next invocation
         throw err;
       });
   }
@@ -58,6 +62,15 @@ function ensureInitialized() {
 }
 
 export default async function handler(req: Request, res: Response) {
-  await ensureInitialized();
-  app(req, res);
+  try {
+    await ensureInitialized();
+    return app(req, res);
+  } catch (err: any) {
+    console.error("Vercel API handler error:", err);
+    if (!res.headersSent) {
+      res
+        .status(500)
+        .json({ success: false, data: null, error: "Internal server error" });
+    }
+  }
 }
