@@ -50,16 +50,17 @@ export async function registerRoutes(
     try {
       const input = api.teamMembers.create.input.parse(req.body);
       const member = await storage.createTeamMember(input);
-      res.status(201).json(member);
-    } catch (error) {
+      res.status(201).json({ success: true, data: member, error: null });
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
-          message: error.errors[0].message,
-          field: error.errors[0].path.join("."),
+          success: false,
+          data: null,
+          error: error.errors[0].message,
         });
       }
       console.error("Error creating team member:", error);
-      res.status(500).json({ message: "Failed to create team member" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to create team member" });
     }
   });
 
@@ -68,16 +69,17 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const input = api.teamMembers.update.input.parse(req.body);
       const member = await storage.updateTeamMember(id, input);
-      res.json(member);
-    } catch (error) {
+      res.json({ success: true, data: member, error: null });
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
-          message: error.errors[0].message,
-          field: error.errors[0].path.join("."),
+          success: false,
+          data: null,
+          error: error.errors[0].message,
         });
       }
       console.error("Error updating team member:", error);
-      res.status(500).json({ message: "Failed to update team member" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to update team member" });
     }
   });
 
@@ -95,10 +97,10 @@ export async function registerRoutes(
   app.get(api.teamMembers.performance.path, async (req, res) => {
     try {
       const performance = await storage.getTeamPerformance();
-      res.json(performance);
-    } catch (error) {
+      res.json({ success: true, data: performance, error: null });
+    } catch (error: any) {
       console.error("Error fetching team performance:", error);
-      res.status(500).json({ message: "Failed to fetch team performance" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch team performance" });
     }
   });
 
@@ -106,20 +108,20 @@ export async function registerRoutes(
   app.get(api.meetings.intelligence.path, async (req, res) => {
     try {
       const intelligence = await storage.getMeetingIntelligence();
-      res.json(intelligence);
-    } catch (error) {
+      res.json({ success: true, data: intelligence, error: null });
+    } catch (error: any) {
       console.error("Error fetching meeting intelligence:", error);
-      res.status(500).json({ message: "Failed to fetch meeting intelligence" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch meeting intelligence" });
     }
   });
 
   app.get(api.meetings.list.path, async (req, res) => {
     try {
       const meetingsList = await storage.getMeetings();
-      res.json(meetingsList);
-    } catch (error) {
+      res.json({ success: true, data: meetingsList, error: null });
+    } catch (error: any) {
       console.error("Error fetching meetings:", error);
-      res.status(500).json({ message: "Failed to fetch meetings" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch meetings" });
     }
   });
 
@@ -128,21 +130,21 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       
       if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid meeting ID" });
+        return res.status(400).json({ success: false, data: null, error: "Invalid meeting ID" });
       }
 
       const meeting = await storage.getMeeting(id);
       if (!meeting) {
-        return res.status(404).json({ message: "Meeting not found" });
+        return res.status(404).json({ success: false, data: null, error: "Meeting not found" });
       }
 
       const actions = await storage.getActionItems({ status: undefined, assigneeId: undefined });
       const meetingActions = actions.filter((a) => a.meetingId === id);
 
-      res.json({ ...meeting, actionItems: meetingActions });
-    } catch (error) {
+      res.json({ success: true, data: { ...meeting, actionItems: meetingActions }, error: null });
+    } catch (error: any) {
       console.error("Error fetching meeting:", error);
-      res.status(500).json({ message: "Failed to fetch meeting" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch meeting" });
     }
   });
 
@@ -188,12 +190,12 @@ export async function registerRoutes(
       const id = Number(req.params.id);
 
       if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid meeting ID" });
+        return res.status(400).json({ success: false, data: null, error: "Invalid meeting ID" });
       }
 
       const meeting = await storage.getMeeting(id);
       if (!meeting) {
-        return res.status(404).json({ message: "Meeting not found" });
+        return res.status(404).json({ success: false, data: null, error: "Meeting not found" });
       }
 
       const teamMembersList = await storage.getTeamMembers();
@@ -232,10 +234,10 @@ export async function registerRoutes(
 
       const updatedMeeting = await storage.getMeeting(id);
       log(`Meeting ${id} analyzed successfully`, "api");
-      res.json(updatedMeeting);
+      res.json({ success: true, data: updatedMeeting, error: null });
     } catch (error: any) {
       log(`Error analyzing meeting: ${error.message}`, "api");
-      res.status(500).json({ message: "Failed to analyze meeting" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to analyze meeting" });
     }
   });
 
@@ -259,10 +261,10 @@ export async function registerRoutes(
       if (req.query.priority) filters.priority = String(req.query.priority);
 
       const items = await storage.getActionItems(filters);
-      res.json(items);
-    } catch (error) {
+      res.json({ success: true, data: items, error: null });
+    } catch (error: any) {
       console.error("Error fetching action items:", error);
-      res.status(500).json({ message: "Failed to fetch action items" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch action items" });
     }
   });
 
@@ -271,12 +273,12 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const item = await storage.getActionItem(id);
       if (!item) {
-        return res.status(404).json({ message: "Action item not found" });
+        return res.status(404).json({ success: false, data: null, error: "Action item not found" });
       }
-      res.json(item);
-    } catch (error) {
+      res.json({ success: true, data: item, error: null });
+    } catch (error: any) {
       console.error("Error fetching action item:", error);
-      res.status(500).json({ message: "Failed to fetch action item" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch action item" });
     }
   });
 
@@ -288,16 +290,17 @@ export async function registerRoutes(
       });
       const input = bodySchema.parse(req.body);
       const item = await storage.createActionItem(input);
-      res.status(201).json(item);
-    } catch (error) {
+      res.status(201).json({ success: true, data: item, error: null });
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
-          message: error.errors[0].message,
-          field: error.errors[0].path.join("."),
+          success: false,
+          data: null,
+          error: error.errors[0].message,
         });
       }
       console.error("Error creating action item:", error);
-      res.status(500).json({ message: "Failed to create action item" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to create action item" });
     }
   });
 
@@ -309,16 +312,17 @@ export async function registerRoutes(
       });
       const input = bodySchema.parse(req.body);
       const item = await storage.updateActionItem(id, input);
-      res.json(item);
-    } catch (error) {
+      res.json({ success: true, data: item, error: null });
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
-          message: error.errors[0].message,
-          field: error.errors[0].path.join("."),
+          success: false,
+          data: null,
+          error: error.errors[0].message,
         });
       }
       console.error("Error updating action item:", error);
-      res.status(500).json({ message: "Failed to update action item" });
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to update action item" });
     }
   });
 

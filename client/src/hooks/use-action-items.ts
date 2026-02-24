@@ -15,8 +15,9 @@ export function useActionItems(filters?: { status?: string, assigneeId?: string,
         if (qs) url += `?${qs}`;
       }
       const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch action items");
-      return api.actionItems.list.responses[200].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to fetch action items");
+      return result.data;
     },
   });
 }
@@ -31,8 +32,9 @@ export function useCreateActionItem() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create action item");
-      return api.actionItems.create.responses[201].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to create action item");
+      return result.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.actionItems.list.path] });
@@ -51,8 +53,9 @@ export function useUpdateActionItem() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to update action item");
-      return api.actionItems.update.responses[200].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to update action item");
+      return result.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.actionItems.list.path] });

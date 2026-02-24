@@ -6,8 +6,9 @@ export function useTeamMembers() {
     queryKey: [api.teamMembers.list.path],
     queryFn: async () => {
       const res = await fetch(api.teamMembers.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch team members");
-      return api.teamMembers.list.responses[200].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to fetch team members");
+      return result.data;
     },
   });
 }
@@ -22,8 +23,9 @@ export function useCreateTeamMember() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create team member");
-      return api.teamMembers.create.responses[201].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to create team member");
+      return result.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.teamMembers.list.path] });
@@ -36,8 +38,9 @@ export function useTeamPerformance() {
     queryKey: [api.teamMembers.performance.path],
     queryFn: async () => {
       const res = await fetch(api.teamMembers.performance.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch team performance");
-      return api.teamMembers.performance.responses[200].parse(await res.json());
+      const result = await res.json();
+      if (!res.ok || result.success === false) throw new Error(result.error || "Failed to fetch team performance");
+      return result.data;
     },
   });
 }
