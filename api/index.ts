@@ -62,6 +62,16 @@ function ensureInitialized() {
 }
 
 export default async function handler(req: Request, res: Response) {
+  // Validate critical env vars and return a clear JSON error instead of crashing
+  if (!process.env.DATABASE_URL) {
+    console.error("[api] DATABASE_URL is not set — add it in Vercel → Settings → Environment Variables");
+    return res.status(500).json({
+      success: false,
+      data: null,
+      error: "Server configuration error: DATABASE_URL is not set. Contact the site owner.",
+    });
+  }
+
   try {
     await ensureInitialized();
     return app(req, res);
@@ -70,7 +80,7 @@ export default async function handler(req: Request, res: Response) {
     if (!res.headersSent) {
       res
         .status(500)
-        .json({ success: false, data: null, error: "Internal server error" });
+        .json({ success: false, data: null, error: err?.message || "Internal server error" });
     }
   }
 }

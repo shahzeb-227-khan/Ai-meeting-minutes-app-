@@ -1,16 +1,18 @@
 import OpenAI from "openai";
-import { log } from "../index";
+import { log } from "../utils";
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY || !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_API_KEY and AI_INTEGRATIONS_OPENAI_BASE_URL must be set"
-  );
+// Lazily create the OpenAI client so a missing key doesn't crash the module
+// (and therefore the entire Vercel serverless function) on import.
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+  if (!apiKey || !baseURL) {
+    throw new Error(
+      "AI_INTEGRATIONS_OPENAI_API_KEY and AI_INTEGRATIONS_OPENAI_BASE_URL must be set to use AI analysis"
+    );
+  }
+  return new OpenAI({ apiKey, baseURL });
 }
-
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
 
 const MAX_INPUT_LENGTH = 50000;
 const AI_TIMEOUT_MS = 60000;
@@ -128,6 +130,7 @@ Rules:
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+    const openai = getOpenAIClient();
 
     let attempt = 0;
     const maxAttempts = 2;
