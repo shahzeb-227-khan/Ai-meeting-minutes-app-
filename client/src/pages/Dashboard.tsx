@@ -1,5 +1,6 @@
 import { useDashboardStats, useMeetingIntelligence } from "@/hooks/use-dashboard";
 import { useMeetings } from "@/hooks/use-meetings";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -16,6 +17,9 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: intel, isLoading: intelLoading } = useMeetingIntelligence();
   const { data: meetings, isLoading: meetingsLoading } = useMeetings();
+  const { user } = useAuth();
+
+  const firstName = user.name.split(" ")[0] || "there";
 
   // Mock data for the completion trend chart
   const trendData = [
@@ -39,7 +43,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, Alex</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {firstName} 👋</h1>
           <p className="text-muted-foreground mt-1">Here's what's happening with your team's execution.</p>
         </div>
         <Link href="/meetings">

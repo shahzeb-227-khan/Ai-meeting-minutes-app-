@@ -5,6 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { analyzeMeeting } from "./services/ai.service";
 import { log } from "./index";
+import bcrypt from "bcryptjs";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -32,9 +33,23 @@ export async function registerRoutes(
     }
   });
 
+  // Performance route MUST be before :id route to avoid NaN matching
+  app.get(api.teamMembers.performance.path, async (req, res) => {
+    try {
+      const performance = await storage.getTeamPerformance();
+      res.json({ success: true, data: performance, error: null });
+    } catch (error: any) {
+      console.error("Error fetching team performance:", error);
+      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch team performance" });
+    }
+  });
+
   app.get(api.teamMembers.get.path, async (req, res) => {
     try {
       const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, data: null, error: "Invalid team member ID" });
+      }
       const member = await storage.getTeamMember(id);
       if (!member) {
         return res.status(404).json({ success: false, data: null, error: "Team member not found" });
@@ -91,16 +106,6 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting team member:", error);
       res.status(500).json({ message: "Failed to delete team member" });
-    }
-  });
-
-  app.get(api.teamMembers.performance.path, async (req, res) => {
-    try {
-      const performance = await storage.getTeamPerformance();
-      res.json({ success: true, data: performance, error: null });
-    } catch (error: any) {
-      console.error("Error fetching team performance:", error);
-      res.status(500).json({ success: false, data: null, error: error.message || "Failed to fetch team performance" });
     }
   });
 
@@ -334,6 +339,208 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting action item:", error);
       res.status(500).json({ message: "Failed to delete action item" });
+    }
+  });
+
+  // Notifications - derived from action items
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const allItems = await storage.getActionItems({});
+      const now = new Date();
+      const todayEnd = new Date(now);
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const notifications: any[] = [];
+
+      for (const item of allItems) {
+        if (item.status === "done") continue;
+
+        if (item.dueDate && new Date(item.dueDate) < now) {
+          notifications.push({
+            id: `overdue-${item.id}`,
+            type: "overdue",
+            title: `Overdue: ${item.title}`,
+            description: `Assigned to ${(item as any).assignee?.name || "Unassigned"} · Due ${new Date(item.dueDate).toLocaleDateString()}`,
+            actionItemId: item.id,
+            createdAt: item.createdAt,
+          });
+        } else if (item.dueDate && new Date(item.dueDate) <= todayEnd) {
+          notifications.push({
+            id: `due-today-${item.id}`,
+            type: "due_today",
+            title: `Due Today: ${item.title}`,
+            description: `Assigned to ${(item as any).assignee?.name || "Unassigned"}`,
+            actionItemId: item.id,
+            createdAt: item.createdAt,
+          });
+        }
+      }
+
+      res.json({ success: true, data: notifications, error: null });
+    } catch (error: any) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ success: false, data: null, error: error.message });
+    }
+  });
+
+  // ===== AUTH ROUTES =====
+
+  // POST /api/auth/signup
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { name, email, password } = z
+        .object({
+          name: z.string().min(2, "Name must be at least 2 characters"),
+          email: z.string().email("Invalid email address"),
+          password: z.string().min(8, "Password must be at least 8 characters"),
+        })
+        .parse(req.body);
+
+      const existing = await storage.getUserByEmail(email);
+      if (existing) {
+        return res.status(409).json({ success: false, error: "An account with this email already exists" });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      const user = await storage.createUser({ name, email, password, passwordHash });
+
+      req.session.userId = user.id;
+      const { passwordHash: _ph, ...safeUser } = user;
+      return res.status(201).json({ success: true, data: safeUser, error: null });
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ success: false, error: error.errors[0]?.message || "Validation failed" });
+      }
+      console.error("Error signing up:", error);
+      return res.status(500).json({ success: false, error: "Failed to create account" });
+    }
+  });
+
+  // POST /api/auth/signin
+  app.post("/api/auth/signin", async (req, res) => {
+    try {
+      const { email, password } = z
+        .object({
+          email: z.string().email("Invalid email address"),
+          password: z.string().min(1, "Password is required"),
+        })
+        .parse(req.body);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ success: false, error: "Invalid email or password" });
+      }
+
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ success: false, error: "Invalid email or password" });
+      }
+
+      req.session.userId = user.id;
+      const { passwordHash: _ph, ...safeUser } = user;
+      return res.json({ success: true, data: safeUser, error: null });
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ success: false, error: error.errors[0]?.message || "Validation failed" });
+      }
+      console.error("Error signing in:", error);
+      return res.status(500).json({ success: false, error: "Failed to sign in" });
+    }
+  });
+
+  // POST /api/auth/signout
+  app.post("/api/auth/signout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.status(500).json({ success: false, error: "Failed to sign out" });
+      }
+      res.clearCookie("meetwise.sid");
+      return res.json({ success: true, data: null, error: null });
+    });
+  });
+
+  // GET /api/auth/me
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const user = await storage.getUserById(req.session.userId);
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ success: false, error: "User not found" });
+      }
+      const { passwordHash: _ph, ...safeUser } = user;
+      return res.json({ success: true, data: safeUser, error: null });
+    } catch (error: any) {
+      console.error("Error fetching current user:", error);
+      return res.status(500).json({ success: false, error: "Failed to fetch user" });
+    }
+  });
+
+  // PATCH /api/auth/me — update profile
+  app.patch("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const updates = z
+        .object({
+          name: z.string().min(2).optional(),
+          email: z.string().email().optional(),
+          role: z.string().optional(),
+          avatar: z.string().optional(),
+          theme: z.string().optional(),
+        })
+        .parse(req.body);
+
+      const user = await storage.updateUser(req.session.userId, updates);
+      const { passwordHash: _ph, ...safeUser } = user;
+      return res.json({ success: true, data: safeUser, error: null });
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ success: false, error: error.errors[0]?.message || "Validation failed" });
+      }
+      console.error("Error updating profile:", error);
+      return res.status(500).json({ success: false, error: "Failed to update profile" });
+    }
+  });
+
+  // PATCH /api/auth/me/password — change password
+  app.patch("/api/auth/me/password", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const { currentPassword, newPassword } = z
+        .object({
+          currentPassword: z.string().min(1, "Current password is required"),
+          newPassword: z.string().min(8, "New password must be at least 8 characters"),
+        })
+        .parse(req.body);
+
+      const user = await storage.getUserById(req.session.userId);
+      if (!user) return res.status(404).json({ success: false, error: "User not found" });
+
+      const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!valid) return res.status(401).json({ success: false, error: "Current password is incorrect" });
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await storage.updateUser(req.session.userId, {});
+      // Update passwordHash directly
+      const { db } = await import("./db");
+      const { users } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, req.session.userId));
+
+      return res.json({ success: true, data: null, error: null });
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ success: false, error: error.errors[0]?.message || "Validation failed" });
+      }
+      console.error("Error changing password:", error);
+      return res.status(500).json({ success: false, error: "Failed to change password" });
     }
   });
 

@@ -3,9 +3,14 @@ import {
   teamMembers,
   meetings,
   actionItems,
+  users,
   type TeamMember,
   type Meeting,
   type ActionItem,
+  type User,
+  type SafeUser,
+  type CreateUserRequest,
+  type UpdateUserRequest,
   type CreateTeamMemberRequest,
   type UpdateTeamMemberRequest,
   type CreateMeetingRequest,
@@ -46,6 +51,12 @@ export interface IStorage {
 
   // Dashboard
   getDashboardStats(): Promise<DashboardStats>;
+
+  // Users (Auth)
+  getUserById(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(data: CreateUserRequest & { passwordHash: string }): Promise<User>;
+  updateUser(id: number, updates: UpdateUserRequest): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -385,6 +396,40 @@ export class DatabaseStorage implements IStorage {
       completionRate,
       averageClarityScore,
     };
+  }
+
+  // Users (Auth)
+  async getUserById(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    return user;
+  }
+
+  async createUser(data: CreateUserRequest & { passwordHash: string }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        name: data.name,
+        email: data.email.toLowerCase(),
+        passwordHash: data.passwordHash,
+        role: "Member",
+      })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: number, updates: UpdateUserRequest): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    if (!user) throw new Error("User not found");
+    return user;
   }
 }
 

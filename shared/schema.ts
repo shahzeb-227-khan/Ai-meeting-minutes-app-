@@ -5,6 +5,18 @@ import { z } from "zod";
 
 // === TABLE DEFINITIONS ===
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  role: text("role").notNull().default("Member"),
+  avatar: text("avatar"),
+  theme: text("theme").notNull().default("light"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const teamMembers = pgTable("team_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -148,3 +160,26 @@ export interface MeetingIntelligence {
   recurringIssues: string[];
   sentimentTrend: string;
 }
+
+// Users
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  passwordHash: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type User = typeof users.$inferSelect;
+export type SafeUser = Omit<User, "passwordHash">;
+export type CreateUserRequest = {
+  name: string;
+  email: string;
+  password: string;
+};
+export type UpdateUserRequest = Partial<{
+  name: string;
+  email: string;
+  role: string;
+  avatar: string;
+  theme: string;
+}>;

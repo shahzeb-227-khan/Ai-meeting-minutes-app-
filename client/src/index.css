@@ -116,22 +116,43 @@
     @apply bg-background/80 backdrop-blur-xl border border-border/50 shadow-sm;
   }
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30;
+    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:border-primary/30;
+  }
+  .gradient-heading {
+    @apply bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent;
   }
   
-  /* Kanban custom scrollbar */
-  .kanban-scroll::-webkit-scrollbar {
+  /* Scrollbars */
+  .kanban-scroll::-webkit-scrollbar,
+  .sidebar-scroll::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  .kanban-scroll::-webkit-scrollbar-track {
+  .kanban-scroll::-webkit-scrollbar-track,
+  .sidebar-scroll::-webkit-scrollbar-track {
     background: transparent;
   }
-  .kanban-scroll::-webkit-scrollbar-thumb {
+  .kanban-scroll::-webkit-scrollbar-thumb,
+  .sidebar-scroll::-webkit-scrollbar-thumb {
     @apply bg-border rounded-full;
   }
-  .kanban-scroll::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+  .kanban-scroll::-webkit-scrollbar-thumb:hover,
+  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  /* Line clamp */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 }
 
