@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { analyzeMeeting } from "./services/ai.service";
-import { log } from "./index";
+import { log } from "./utils";
 import bcrypt from "bcryptjs";
 
 export async function registerRoutes(
