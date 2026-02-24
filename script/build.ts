@@ -59,6 +59,24 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  // Bundle the Vercel serverless entry point.
+  // This resolves @shared/* and all other path aliases at build time,
+  // so Vercel doesn't need to handle TypeScript path aliases at runtime.
+  console.log("building vercel api bundle...");
+  await esbuild({
+    entryPoints: ["api/index.ts"],
+    platform: "node",
+    bundle: true,
+    format: "esm",
+    outfile: "api/bundle.js",
+    // esbuild reads tsconfig.json paths/baseUrl to resolve @shared/* aliases
+    tsconfig: "tsconfig.json",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+    },
+    logLevel: "info",
+  });
 }
 
 buildAll().catch((err) => {
